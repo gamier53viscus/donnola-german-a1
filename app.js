@@ -262,7 +262,8 @@ ROUTES.speak=function(){
 function writeTask(w,box,back,cat,onScore){
  box.innerHTML=`<div class="card"><p>${esc(w.p)}</p><textarea id="tx" rows="7" placeholder="Schreiben Sie hier…"></textarea><div class="mut" id="wc">0 words</div><p></p><button class="btn g" style="width:100%" id="ck">Check</button><div id="fb"></div></div>`;
  $("tx").oninput=()=>$("wc").textContent=words($("tx").value)+" words";
- $("ck").onclick=()=>{const t=$("tx").value;const res=w.req.map(([n,re])=>[n,uni(re).test(t)]);const got=res.filter(r=>r[1]).length;const wc=words(t);const tooShort=w.min&&wc<w.min;
+ // ss counts as ß (Swiss keyboards have no ß): "Liebe Grüsse" passes a check written as grüße
+ $("ck").onclick=()=>{const t=$("tx").value;const res=w.req.map(([n,re])=>{const r=uni(re);return [n,r.test(t)||r.test(t.replace(/ss/g,"ß"))]});const got=res.filter(r=>r[1]).length;const wc=words(t);const tooShort=w.min&&wc<w.min;
   bump(cat||"Writing",got===res.length&&!tooShort);
   $("fb").innerHTML=`<div class="fb">${res.map(([n,ok])=>`${ok?ICON.check:ICON.x} ${esc(n)}`).join("<br>")}${w.min?`<br>${tooShort?ICON.x:ICON.check} Length: ${wc} words (min. ${w.min})`:""}</div><div class="fb"><span class="mut">Model answer:</span><br><b class="text">${esc(w.m)}</b></div><p class="mut">The app only checks that the required elements are present. Compare spelling, articles and verb forms with the model answer yourself.</p>
   <div class="row"><button class="btn" id="ag">Again</button><button class="btn p" id="bk">${onScore?"Next":"Back"}</button></div>`;
@@ -321,7 +322,8 @@ function exam(e){
    startTimer(w.min,()=>{expired="Schreiben";sc.schreiben=Math.round(pts*25/15);next()});
    // leading zeros in dates are optional: 2.11.1990 = 02.11.1990 (phone numbers keep their 0)
    const field=s=>norm(s.replace(/\b0(\d)\./g,"$1.")).replace(/\s|\./g,"");
-   $("ck").onclick=()=>{let got=0;const rows=w.t1.fields.map((f,i)=>{const v=$("f"+i).value;const ok=field(v)===field(f[1]);if(ok)got++;return `${ok?ICON.check:ICON.x} ${esc(f[0])}: <b>${esc(f[1])}</b>`});pts+=got;bump("Writing",got===5);
+   // several accepted answers are separated by | in the data; the first one is shown as the solution
+   $("ck").onclick=()=>{let got=0;const rows=w.t1.fields.map((f,i)=>{const v=$("f"+i).value;const alts=f[1].split("|");const ok=alts.some(a=>field(v)===field(a));if(ok)got++;return `${ok?ICON.check:ICON.x} ${esc(f[0])}: <b>${esc(alts[0])}</b>`});pts+=got;bump("Writing",got===5);
     $("fb").innerHTML=`<div class="fb">${rows.join("<br>")}<br>${got}/5 points</div><button class="btn p" style="margin-top:10px;width:100%" id="nx">Next: Teil 2</button>`;$("ck").disabled=true;$("nx").onclick=t2}};
   const t2=()=>{view.innerHTML=head("Schreiben")+`<div class="mut">Teil 2 · Mitteilung</div><div id="box"></div>`;writeTask(w.t2,$("box"),null,"Writing",frac=>{pts+=frac*10;sc.schreiben=Math.round(pts*25/15);next()})};
   t1()})}

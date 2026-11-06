@@ -12,13 +12,14 @@ open `index.html` by double-click or host it as static files (GitHub Pages). Pro
 - `icon-512.png`, `icon-192.png`, `apple-touch-icon.png` (180 px), `favicon.ico` (16/32/48) – rendered from the logo on #F7F5F1 with 14 % margin, square corners
 
 ## Content
-13 lessons, 959 unique words (1026 entries incl. repeats; covers the official Goethe A1 word list), 262 grammar items, 13 reading texts, 13 listening dialogues, 88 dictation sentences, 13 writing and 13 speaking tasks, 3 Modelltests.
+13 lessons, 935 unique words (1026 entries incl. repeats; covers the official Goethe A1 word list), 262 grammar items, 13 reading texts, 13 listening dialogues, 88 dictation sentences, 13 writing and 13 speaking tasks, 3 Modelltests.
 Lessons: 1 greetings & spelling · 2 numbers, jobs, forms · 3 articles & plural · 4 family & possessives · 5 verbs & word order · 6 food & accusative · 7 town, directions & dative · 8 time, dates, separable verbs, appointments · 9 free time, modal verbs, weather · 10 shopping, clothes, ads · 11 home, travel, announcements, formal email · 12 Perfekt · 13 health & imperative.
 
 ## Scoring in the Modelltests
-Each part is scaled to 25 points (Goethe), pass mark 60/100. Schreiben Teil 1 checks the 5 form fields exactly (umlauts may be typed as ae/oe/ue), Teil 2 checks content points and length. Sprechen is self-rated (3 + 6 + 6 points).
+Each part is scaled to 25 points (Goethe), pass mark 60/100. Schreiben Teil 1 checks the 5 form fields (umlauts may be typed as ae/oe/ue, leading zeros in dates are optional; several accepted answers are separated by `|` in the data, the first one is shown as the solution), Teil 2 checks content points and length. Sprechen is self-rated (3 + 6 + 6 points).
 
 ## Notes for development
-- Vocabulary key = the German entry (stable). Words repeated in later lessons count once (first lesson).
+- Vocabulary key = the German entry (stable). Words repeated in later lessons count once (first lesson), so write a repeat exactly like the first entry, plural marker included.
+- Writing checks (`req`) run Unicode-aware (`\b` and `\w` work with umlauts and ß) and accept ss for ß.
 - Listening uses `speechSynthesis` with a German voice (de-DE preferred); the home page shows a voice picker and a warning if none is installed.
 - Personal data in model answers: Momoko Tanaka, from Tokyo, lives in St. Gallen, husband Eliseo. Age (34), job (Grafikerin), address and phone numbers are placeholders – adjust in the data files.
