@@ -4,10 +4,15 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5}
 .wrap{max-width:760px;margin:0 auto;padding:0 16px}
-h1{font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;font-weight:700;margin:12px 0 2px;letter-spacing:-.2px}
-h1 small{font-family:Inter,system-ui,sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--acc);margin-left:8px;vertical-align:middle}
+h1{margin:10px 0 2px;font-size:inherit;font-weight:inherit}
+.logo{display:flex;align-items:center;gap:8px}
+.logo .mark{height:28px;width:auto;flex:none}
+.logo .wm{font-family:"Cormorant Garamond",Georgia,serif;font-size:26px;font-weight:700;line-height:1;letter-spacing:-.2px}
+.logo .tag{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--acc)}
+.logo.lg{gap:12px;margin:6px 0 8px}
+.logo.lg .mark{height:44px}
+.logo.lg .wm{font-size:34px}
 h2{font-family:"Cormorant Garamond",Georgia,serif;font-size:30px;font-weight:700;margin:6px 0 8px;line-height:1.1}
-h2.brand{font-size:34px}
 h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:22px;margin:18px 0 6px;color:var(--acc-dark);font-weight:700}
 .eyebrow{font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--acc)}
 .hello{margin:4px 0 14px}

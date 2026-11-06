@@ -1,10 +1,11 @@
-/* Deutsch A1 – app logic (vanilla JS, no build). UI in English, content in German. */
+/* Donnola – German A1 – app logic (vanilla JS, no build). UI in English, content in German. */
 (function(){
 "use strict";
 
 /* ---------- helpers ---------- */
 const $=id=>document.getElementById(id);
 const view=$("view");
+const MARK=document.querySelector("header .mark").outerHTML;
 const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const sh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const pad=n=>String(n).padStart(2,"0");
@@ -110,7 +111,7 @@ ROUTES.home=function(){
  const next=L.find(l=>!S.done[l.id]);
  const noVoice=!voices.length;
  view.innerHTML=`
- <div class="hello"><div class="mut">Guten Tag, Momoko.</div><h2 class="brand">Deutsch A1</h2><div class="mut">Goethe-Zertifikat A1 · Start Deutsch 1</div></div>
+ <div class="hello"><div class="mut">Guten Tag, Momoko.</div><div class="logo lg">${MARK}<span class="wm">donnola</span><span class="tag">German A1</span></div><div class="mut">Goethe-Zertifikat A1 · Start Deutsch 1</div></div>
  ${next?`<div class="card hero" id="nextL"><div class="mut" style="color:inherit;opacity:.85">Continue</div><b>Lesson ${next.id} · ${esc(next.title)}</b><div style="opacity:.85;font-size:14px">${esc(next.sub)}</div></div>`:`<div class="card"><b>All lessons completed.</b> Now revise and do the Modelltests.</div>`}
  <div class="grid">
   <div class="card"><div class="num">${doneN}/${L.length}</div><div class="mut">lessons completed</div></div>
