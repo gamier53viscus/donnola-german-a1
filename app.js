@@ -11,6 +11,11 @@ const pad=n=>String(n).padStart(2,"0");
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
 const words=s=>(s.trim().match(/[\p{L}\p{N}'-]+/gu)||[]).length;
+// \b and \w in JS regexes only know ASCII letters, so checks like /\bgroß\b/ or /\bärztin/ never matched
+const WL="[\\p{L}\\p{N}_]";
+const uni=re=>new RegExp(re.source.replace(/\\b/g,`(?:(?<=${WL})(?!${WL})|(?<!${WL})(?=${WL}))`).replace(/\\w/g,WL),re.flags.replace("u","")+"u");
+// wide tables scroll inside their own box instead of widening the whole page on phones
+const wrapTables=el=>el.querySelectorAll(".gram table").forEach(t=>{const w=document.createElement("div");w.className="tw";t.before(w);w.append(t)});
 const ICON={speaker:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4h4l5 4V6L7 10H3z"></path><path d="M16 9a4 4 0 0 1 0 6"></path></svg>',
  check:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>',
  x:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>'};
@@ -66,7 +71,8 @@ function vItem(v){
  const toEn=Math.random()<0.5;
  const pool=sh(V.filter(x=>x.k!==v.k&&x.lid===v.lid)).concat(sh(V.filter(x=>x.lid!==v.lid)));
  const seen=new Set([toEn?v.en:v.de]);const wr=[];
- for(const x of pool){const c=toEn?x.en:x.de;if(!seen.has(c)){seen.add(c);wr.push(c)}if(wr.length===3)break}
+ // a word with the same English meaning (Ich möchte / Ich hätte gern) would be a second correct answer
+ for(const x of pool){const c=toEn?x.en:x.de;if(!seen.has(c)&&x.en!==v.en){seen.add(c);wr.push(c)}if(wr.length===3)break}
  return mk(toEn?`What does «${v.de}» mean?`:`How do you say «${v.en}» in German?`,toEn?v.en:v.de,wr,"","Vocabulary",v.k)
 }
 function runQuiz(list,title,o){
@@ -141,7 +147,7 @@ function lesson(l,tab){
  $("back").onclick=e=>{e.preventDefault();go("lessons")};
  view.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>lesson(l,b.dataset.t));
  const box=$("lb");
- if(tab==="gram"){box.innerHTML=`<div class="card"><b>Goals</b><ul>${l.goals.map(g=>`<li>${esc(g)}</li>`).join("")}</ul></div><div class="card gram">${l.grammar}</div><div class="row"><button class="btn p" id="n1">Next: vocabulary</button></div>`;$("n1").onclick=()=>lesson(l,"voc")}
+ if(tab==="gram"){box.innerHTML=`<div class="card"><b>Goals</b><ul>${l.goals.map(g=>`<li>${esc(g)}</li>`).join("")}</ul></div><div class="card gram">${l.grammar}</div><div class="row"><button class="btn p" id="n1">Next: vocabulary</button></div>`;wrapTables(box);$("n1").onclick=()=>lesson(l,"voc")}
  if(tab==="voc"){const vs=vocabOfLesson(l.id);box.innerHTML=`<div class="card"><div class="row" style="margin:0 0 12px"><button class="btn p" id="learn">Learn these words as cards</button><button class="btn" id="vt">Vocabulary test</button></div>
   <div class="vlist">${vs.map(v=>`<div><span><b>${esc(v.de)}</b> ${sayBtn(spoken(v.de))}</span><span class="mut">${esc(v.en)}</span></div>`).join("")}</div></div>`;
   $("learn").onclick=()=>cards(vs,()=>lesson(l,"voc"));$("vt").onclick=()=>runQuiz(sh(vs).slice(0,15).map(vItem),"Vocabulary L"+l.id,{again:()=>lesson(l,"voc"),onDone:(s,n)=>done(s,n,()=>lesson(l,"voc"))})}
@@ -222,7 +228,8 @@ function dictation(items,back){
   const check=()=>{const ok=norm($("in").value)===norm(de);bump("Listening",ok,"dict|"+de);
    $("fb").innerHTML=`<div class="fb">${ok?ICON.check+" Correct!":ICON.x+" Not quite."}<br><b>${esc(de)}</b><br><span class="mut">${esc(en)}</span>${ok?"":`<br><span class="mut">You typed: ${esc($("in").value)}</span>`}</div><button class="btn p" style="margin-top:10px;width:100%" id="nx">Next</button>`;
    $("ck").disabled=true;$("nx").onclick=()=>{n++;show()};$("nx").focus()};
-  $("ck").onclick=check;$("in").onkeydown=e=>{if(e.key==="Enter"&&!$("ck").disabled)check()};
+  // preventDefault: otherwise the same Enter also clicks the freshly focused Next button and the feedback is skipped
+  $("ck").onclick=check;$("in").onkeydown=e=>{if(e.key==="Enter"&&!$("ck").disabled){e.preventDefault();check()}};
  };
  show();
 }
@@ -254,7 +261,7 @@ ROUTES.speak=function(){
 function writeTask(w,box,back,cat,onScore){
  box.innerHTML=`<div class="card"><p>${esc(w.p)}</p><textarea id="tx" rows="7" placeholder="Schreiben Sie hier…"></textarea><div class="mut" id="wc">0 words</div><p></p><button class="btn g" style="width:100%" id="ck">Check</button><div id="fb"></div></div>`;
  $("tx").oninput=()=>$("wc").textContent=words($("tx").value)+" words";
- $("ck").onclick=()=>{const t=$("tx").value;const res=w.req.map(([n,re])=>[n,re.test(t)]);const got=res.filter(r=>r[1]).length;const wc=words(t);const tooShort=w.min&&wc<w.min;
+ $("ck").onclick=()=>{const t=$("tx").value;const res=w.req.map(([n,re])=>[n,uni(re).test(t)]);const got=res.filter(r=>r[1]).length;const wc=words(t);const tooShort=w.min&&wc<w.min;
   bump(cat||"Writing",got===res.length&&!tooShort);
   $("fb").innerHTML=`<div class="fb">${res.map(([n,ok])=>`${ok?ICON.check:ICON.x} ${esc(n)}`).join("<br>")}${w.min?`<br>${tooShort?ICON.x:ICON.check} Length: ${wc} words (min. ${w.min})`:""}</div><div class="fb"><span class="mut">Model answer:</span><br><b class="text">${esc(w.m)}</b></div><p class="mut">The app only checks that the required elements are present. Compare spelling, articles and verb forms with the model answer yourself.</p>
   <div class="row"><button class="btn" id="ag">Again</button><button class="btn p" id="bk">${onScore?"Next":"Back"}</button></div>`;
@@ -271,12 +278,14 @@ ROUTES.exam=function(){
  EX.map(e=>{const hist=(S.exam||[]).filter(x=>x.id===e.id).slice(-1)[0];return `<div class="card click" data-e="${e.id}"><b>${esc(e.title)}</b><div class="mut">Hören · Lesen · Schreiben · Sprechen${hist?` · last result ${hist.total}/100 (${hist.pass?"passed":"not passed"})`:""}</div></div>`}).join("");
  view.querySelectorAll("[data-e]").forEach(c=>c.onclick=()=>exam(EX.find(e=>e.id===+c.dataset.e)));
 };
-let timerId=null;
-function startTimer(min,onEnd){clearInterval(timerId);let s=Math.round(min*60);const tick=()=>{const e=$("tm");if(!e){clearInterval(timerId);return}e.textContent=`${pad(Math.floor(s/60))}:${pad(s%60)}`;if(s<=60)e.classList.add("low");if(s<=0){clearInterval(timerId);onEnd&&onEnd()}s--};tick();timerId=setInterval(tick,1000)}
+let timerId=null,timerLeft=0;
+// head() renders the remaining time right away, so the timer is not blank for up to a second on every new item
+const timerText=()=>`${pad(Math.floor(timerLeft/60))}:${pad(timerLeft%60)}`;
+function startTimer(min,onEnd){clearInterval(timerId);timerLeft=Math.round(min*60);const tick=()=>{const e=$("tm");if(!e){clearInterval(timerId);return}e.textContent=timerText();e.classList.toggle("low",timerLeft<=60);if(timerLeft<=0){clearInterval(timerId);onEnd&&onEnd()}timerLeft--};tick();timerId=setInterval(tick,1000)}
 const tfOpts=["richtig (true)","falsch (false)"];
 function exam(e){
  const sc={};let expired=null;
- const head=(name)=>`<span class="timer" id="tm"></span><div class="mut">${esc(e.title)} · ${name}</div>`;
+ const head=(name)=>`<span class="timer${timerLeft<=60?" low":""}" id="tm">${timerText()}</span><div class="mut">${esc(e.title)} · ${name}</div>`;
  const next=()=>{if(sc.hoeren===undefined)return hoeren();if(sc.lesen===undefined)return lesen();if(sc.schreiben===undefined)return schreiben();if(sc.sprechen===undefined)return sprechen();return summary()};
  function intro(name,min,desc,start){clearInterval(timerId);view.innerHTML=`${expired?`<div class="fb">Time for ${expired} is over. Points so far were saved.</div>`:""}<div class="card"><h2>${name}</h2><p>${desc}</p><p class="mut">Time: ${min} minutes.</p><button class="btn p" id="st">Start</button></div>`;expired=null;$("st").onclick=start}
  // generic list runner with timer: items have {render, check}
@@ -309,7 +318,9 @@ function exam(e){
   let pts=0;
   const t1=()=>{view.innerHTML=head("Schreiben")+`<div class="mut">Teil 1 · Formular</div><div class="card"><p>${esc(w.t1.intro)}</p>${w.t1.fields.map((f,i)=>`<label style="display:block;margin:10px 0 4px;font-weight:600">${esc(f[0])}</label><input type="text" id="f${i}" autocomplete="off">`).join("")}<p></p><button class="btn g" style="width:100%" id="ck">Check</button><div id="fb"></div></div>`;
    startTimer(w.min,()=>{expired="Schreiben";sc.schreiben=Math.round(pts*25/15);next()});
-   $("ck").onclick=()=>{let got=0;const rows=w.t1.fields.map((f,i)=>{const v=$("f"+i).value;const ok=norm(v).replace(/\s|\./g,"")===norm(f[1]).replace(/\s|\./g,"");if(ok)got++;return `${ok?ICON.check:ICON.x} ${esc(f[0])}: <b>${esc(f[1])}</b>`});pts+=got;bump("Writing",got===5);
+   // leading zeros in dates are optional: 2.11.1990 = 02.11.1990 (phone numbers keep their 0)
+   const field=s=>norm(s.replace(/\b0(\d)\./g,"$1.")).replace(/\s|\./g,"");
+   $("ck").onclick=()=>{let got=0;const rows=w.t1.fields.map((f,i)=>{const v=$("f"+i).value;const ok=field(v)===field(f[1]);if(ok)got++;return `${ok?ICON.check:ICON.x} ${esc(f[0])}: <b>${esc(f[1])}</b>`});pts+=got;bump("Writing",got===5);
     $("fb").innerHTML=`<div class="fb">${rows.join("<br>")}<br>${got}/5 points</div><button class="btn p" style="margin-top:10px;width:100%" id="nx">Next: Teil 2</button>`;$("ck").disabled=true;$("nx").onclick=t2}};
   const t2=()=>{view.innerHTML=head("Schreiben")+`<div class="mut">Teil 2 · Mitteilung</div><div id="box"></div>`;writeTask(w.t2,$("box"),null,"Writing",frac=>{pts+=frac*10;sc.schreiben=Math.round(pts*25/15);next()})};
   t1()})}
@@ -328,7 +339,7 @@ function exam(e){
 }
 
 /* ---------- info ---------- */
-ROUTES.info=function(){view.innerHTML=`<h2>Exam info</h2><div class="card gram">${window.EXAMINFO||""}</div>`};
+ROUTES.info=function(){view.innerHTML=`<h2>Exam info</h2><div class="card gram">${window.EXAMINFO||""}</div>`;wrapTables(view)};
 
 go("home");
 })();
